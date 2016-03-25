@@ -3,17 +3,19 @@
 #include <Arduino.h>
 #include <Sensor.h>
 #include <RF24.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+
 
 class STemptureHumidity : public Sensor {
 public:
-	STemptureHumidity(int,  RF24 &);
-	int readSensorData();
-	const Message prepareMessage();
+	STemptureHumidity(int);
+	Message readSensorData();
+	//const Message prepareMessage();
 	byte read_data();//aux func
 private:
 	int pin;
-	byte dat[4];
-	RF24 radio;
+	byte dat[5];
 };
 
 

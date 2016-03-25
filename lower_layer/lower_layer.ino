@@ -2,34 +2,32 @@
 #include <STemptureHumidity.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-
+#include <Message.h>
+#include <SPI.h>
+  
 
 //globals
 //-------
 RF24 radio(7, 8);
-//int limit = 40;
-//struct Message {
-//  short int source; 
-//  short int dest;
-//  short int part;
-//  //time?
-//  char data[24] ;
-//};
+
+int soil_humidity_threshold_minimum = 40;
+int soil_humidity_threshold_maximmum = 40;
+
 
 const byte rxAddr[6] = "00002";
 const byte wxAddr[6] = "00001";
-//KY015 DHT11 Temperature and humidity sensor 
-//int DHpin = 4;
-//byte dat [5];
-//int LEDin = 2;
 
 
 void initConsole() {
+      Serial.println("initConsole called");
+
   while (!Serial);
   Serial.begin(9600);
 }
 
 void initRadio() {
+    Serial.println("initRadio called");
+
     radio.begin();
     radio.setRetries(15, 15);
     radio.openWritingPipe(wxAddr);
@@ -38,111 +36,70 @@ void initRadio() {
 }
 
 void setup() {
+  Serial.println("setup called");
   initConsole();
   initRadio();
   
 }
-//byte read_data () {
-//  byte data;
-//  for (int i = 0; i < 8; i ++) {
-//    if (digitalRead (DHpin) == LOW) {
-//      while (digitalRead (DHpin) == LOW); // wait for 50us
-//      delayMicroseconds (30); // determine the duration of the high level to determine the data is '0 'or '1'
-//      if (digitalRead (DHpin) == HIGH)
-//        data |= (1 << (7-i)); // high front and low in the post
-//      while (digitalRead (DHpin) == HIGH); // data '1 ', wait for the next one receiver
-//     }
-//  }
-//return data;
-//}
+void sendMessage(Message message){
+    Serial.println("sendMessage called");
+    bool ok = false;
+    int retry_times = 30;
+    radio.stopListening();
+    while(!ok && --retry_times){  //if message fails , retry 30 times
+                 Serial.print("retry: ");  
+                                      Serial.println(retry_times  );  
 
-//void start_test () {
-//  digitalWrite (DHpin, LOW);      // bus down, send start signal
-//  delay (30);                     // delay greater than 18ms, so DHT11 start signal can be detected
-//  digitalWrite (DHpin, HIGH);
-//  delayMicroseconds (40); // Wait for DHT11 response
-//  pinMode (DHpin, INPUT);   
-//  while (digitalRead (DHpin) == HIGH);
-//  delayMicroseconds (80); // DHT11 response, pulled the bus 80us
-//  if (digitalRead (DHpin) == LOW);
-//  delayMicroseconds (80); // DHT11 80us after the bus pulled to start sending data
-//  for (int i = 0; i < 4; i ++) // receive temperature and humidity data, the parity bit is not considered
-//    dat[i] = read_data ();
-//  pinMode (DHpin, OUTPUT);
-//  digitalWrite (DHpin, HIGH); // send data once after releasing the bus, wait for the host to open the next Start signal
-//}
 
-//void monitorSensors() {
-//   start_test ();
-//  Serial.print ("Current humdity = ");
-//  Serial.print (dat [0], DEC);                    // display the humidity-bit integer;
-//  if(dat[0]>30) 
-//    digitalWrite(LEDin, HIGH);
-//  else 
-//    digitalWrite(LEDin, LOW);
-//  Serial.print ('.');
-//  Serial.print (dat [1], DEC);                    // display the humidity decimal places;
-//  Serial.print ("% ");
-//  Serial.print ("              Temperature = ");
-//  Serial.print (dat [2], DEC);                    // display the temperature of integer bits;
-//  Serial.print ('.');
-//  Serial.print (dat [3], DEC);                    // display the temperature of decimal places;
-//  Serial.println ('C');
-//  delay (500);
-//    
-//}
+        ok =  radio.write(&message, sizeof(message));
+        if(ok){
+           Serial.println("send seccess");      
+        }
+         else{
+             Serial.println("send failed ");
+         }
+        // radio.startListening();
+    }
+        
+  }
+bool receiveMessage(Message& message){
+        Serial.println("receiveMessage called");
 
-//void prepareMessage(){
-//    
-//  char text[32]="";
-//  itoa(dat[0],text,10);
-//  Serial.print("itoa check :");
-//  Serial.println(text);
-//    
-//    Serial.println("here1");
-//   radio.stopListening();
-//  char text2[32]="hi";
-//bool ok =  radio.write(&text, sizeof(text));
-//  if(ok){
-//    Serial.println("send seccess");
-//         
-//  }
-//else{
-//      Serial.println("send failed");
-//
-//  }
-//   radio.startListening();
-//
-//  if (radio.available())
-//  {
-//      radio.read(&text, sizeof(text));
-//      Serial.print("recived message:");
-//      Serial.println(text);
-//
-//      limit = atoi(text);
-//  }
-//}
-//void sendToUpperLayer(Message msg) {
-//  if (sizeof(msg) > 32) {
-//    //divideMsg(msg);
-//  }
-//  
-//  radio.stopListening();
-//  bool ok = radio.write(&msg, sizeof(msg));
-//  if (ok) {
-//    Serial.println("sent");
-//  }
-//  else {
-//    Serial.println("nothing to read");
-//  }
-//  
-//}
+    if (radio.available()){
+      radio.read(&message, sizeof(message));
+      Serial.print("recived message:");
+      Serial.println(message.data);
+      return true;
+    }
+    else{
+           Serial.println("nothing to read");
+           return false;
+      }
+}
+
 
 void loop()
 {
-  Sensor * th= new STemptureHumidity(4,radio); 
-  th->readSensorData();
-  th->prepareMessage();
+    Serial.println("loop called");
+
+  Sensor * th= new STemptureHumidity(2); 
+    Serial.println("STemptureHumidity created");
+
+//  Sensor * sh= new SSoilHumidity(4); 
+ // sh->readSensorData();
+  //check threshhold();  
+  Message messageToSend =  th->readSensorData();
+      Serial.println("after read created");
+
+  sendMessage(messageToSend);
+  Message messageToRead;
+  
+ if(receiveMessage(messageToRead)){
+ Serial.print("main loop, i got: ");
+  Serial.println(messageToRead.minimum_threshold);
+   Serial.print("and: ");
+     Serial.println(messageToRead.maximum_threshold);
+ }
 
 
   delay(1000);

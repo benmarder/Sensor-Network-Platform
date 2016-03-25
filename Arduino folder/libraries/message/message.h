@@ -4,8 +4,9 @@
 #define MESSAGE_H
 
 
-class Message {
-	
+struct Message {
+	byte minimum_threshold;
+	byte maximum_threshold;
   short int source; 
   short int dest;
   short int part;

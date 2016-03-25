@@ -11,7 +11,7 @@ class Sensor {
         inline virtual void begin(){ /*nothing*/ }; 
         //read function must be implemented
         //this is called a pure virtual function
-        virtual int readSensorData() = 0; 
-        virtual const Message prepareMessage() = 0;
+        virtual Message readSensorData() = 0; 
+       // virtual const Message prepareMessage() = 0;
 };
 #endif

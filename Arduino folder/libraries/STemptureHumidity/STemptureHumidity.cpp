@@ -15,27 +15,30 @@ byte STemptureHumidity::read_data () {
 return data;
 }
 
-STemptureHumidity::STemptureHumidity(int pin, RF24 & radio){
+STemptureHumidity::STemptureHumidity(int pin){
 	this->pin = pin;
-	this->radio = radio;
 }
 
 
-int STemptureHumidity::readSensorData(){
+Message STemptureHumidity::readSensorData(){
+	Serial.println("readSensorData called");
+	pinMode(pin, OUTPUT);
   digitalWrite (pin, LOW);      // bus down, send start signal
   delay (30);                     // delay greater than 18ms, so DHT11 start signal can be detected
   digitalWrite (pin, HIGH);
   delayMicroseconds (40); // Wait for DHT11 response
   pinMode (pin, INPUT);   
-  while (digitalRead (pin) == HIGH);
+ while (digitalRead (pin) == HIGH);
+
   delayMicroseconds (80); // DHT11 response, pulled the bus 80us
   if (digitalRead (pin) == LOW);
+
   delayMicroseconds (80); // DHT11 80us after the bus pulled to start sending data
   for (int i = 0; i < 4; i ++) // receive temperature and humidity data, the parity bit is not considered
     dat[i] = read_data ();
+
   pinMode (pin, OUTPUT);
   digitalWrite (pin, HIGH); // send data once after releasing the bus, wait for the host to open the next Start signal
-	 
   Serial.print ("Current humdity = ");
   Serial.print (dat [0], DEC);                    // display the humidity-bit integer;
   //if(dat[0]>30) 
@@ -50,41 +53,20 @@ int STemptureHumidity::readSensorData(){
   Serial.print ('.');
   Serial.print (dat [3], DEC);                    // display the temperature of decimal places;
   Serial.println ('C');
-  delay (500);
+  delay(500);
+
+  Message message;
+  for (int i = 0; i < 4; ++i) {
+	  message.data[i]=dat[i];
+  }
+  Serial.print("copied from sensor to messege: check: ");
+
+  Serial.println((byte)message.data[0]);
+ 
+  return message;
 }
 
 
-const Message STemptureHumidity :: prepareMessage(){
-	
-	
-  char text[32]="";
-  itoa(dat[0],text,10);
-  Serial.print("itoa check :");
-  Serial.println(text);
-    
-    Serial.println("here1");
-   radio.stopListening();
-  char text2[32]="hi";
-bool ok =  radio.write(&text, sizeof(text));
-  if(ok){
-    Serial.println("send seccess");
-         
-  }
-else{
-      Serial.println("send failed");
-
-  }
-   radio.startListening();
-
-  if (radio.available())
-  {
-      radio.read(&text, sizeof(text));
-      Serial.print("recived message:");
-      Serial.println(text);
-
-      limit = atoi(text);
-  }
-}
 
 
 

@@ -1,21 +1,18 @@
 
 
-#include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-#include <ArduinoJson.h>
 
 //KY015 DHT11 Temperature and humidity sensor 
-int DHpin = 4;
+int DHpin = 2;
 byte dat [5];
-int LEDin = 2;
+int LEDin = 4;
 
 struct Message{
   short int source; //2 byte
   short int dest;   //
-  char data
   
-  }
+  };
 RF24 radio(7, 8);
 int limit = 40;
 //const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
@@ -44,9 +41,9 @@ void start_test () {
 
 
   pinMode (DHpin, INPUT);
-      Serial.print ("in");
 
   while (digitalRead (DHpin) == HIGH);
+
   delayMicroseconds (80); // DHT11 response, pulled the bus 80us
   if (digitalRead (DHpin) == LOW);
   delayMicroseconds (80); // DHT11 80us after the bus pulled to start sending data
