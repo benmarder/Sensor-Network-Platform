@@ -1,7 +1,7 @@
 #include <STemptureHumidity.h>
 
 
-byte STemptureHumidity::read_data () {
+byte STemptureHumidity::read_data () { //AUX for reading tempertur and humidity sensor
   byte data;
   for (int i = 0; i < 8; i ++) {
     if (digitalRead (pin) == LOW) {
@@ -55,13 +55,13 @@ Message STemptureHumidity::readSensorData(){
   Serial.println ('C');
   delay(500);
 
-  Message message;
+  Message message;					//create new message
   for (int i = 0; i < 4; ++i) {
-	  message.data[i]=dat[i];
+	  message.data[i]=dat[i];		//enter the data
   }
+  message.sensorType = 'T';
   Serial.print("copied from sensor to messege: check: ");
-
-  Serial.println((byte)message.data[0]);
+  Serial.println((byte)message.data[0]);	
  
   return message;
 }
